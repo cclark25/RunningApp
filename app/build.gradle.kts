@@ -54,6 +54,14 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.activity.compose)
     implementation(libs.core.splashscreen)
+
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:x.x.x")
+    implementation( "org.jetbrains.kotlinx:kotlinx-coroutines-android:x.x.x")
+//    implementation( libs.lifecycle.extensions)
+    implementation( libs.lifecycle.runtime.ktx)
+    implementation(libs.appcompat)
+
+
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)

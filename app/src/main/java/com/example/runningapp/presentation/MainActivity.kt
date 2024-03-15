@@ -3,6 +3,7 @@ package com.example.runningapp.presentation
 import android.graphics.drawable.Icon
 import android.os.BatteryManager
 import android.os.Bundle
+import android.os.Parcel
 import android.os.Vibrator
 import android.provider.Settings
 import android.view.GestureDetector
@@ -10,6 +11,7 @@ import android.view.KeyEvent
 import android.view.MotionEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -27,6 +29,7 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.GestureDetectorCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.wear.ambient.AmbientLifecycleObserver
 import androidx.wear.compose.foundation.CurvedScope
 import androidx.wear.compose.foundation.curvedBox
@@ -37,7 +40,12 @@ import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.material.curvedText
 import androidx.wear.input.WearableButtons
 import com.example.runningapp.presentation.theme.RunningAppTheme
+import com.google.android.gms.tasks.Tasks
+import com.google.android.gms.wearable.Wearable
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
+import org.json.JSONObject
 import java.text.DecimalFormat
 import java.util.Timer
 import java.util.TimerTask
@@ -60,7 +68,7 @@ class RefreshData(be: RunningAppBackend) {
 //    val distanceMeters: Double = 0.0;
 }
 
-open class MainActivity : ComponentActivity(),
+open class MainActivity : AppCompatActivity(),
     GestureDetector.OnGestureListener,
     GestureDetector.OnDoubleTapListener {
     var backend: RunningAppBackend? = null
@@ -280,6 +288,24 @@ open class MainActivity : ComponentActivity(),
 
         lifecycle.addObserver(this.ambientObserver)
 
+        lifecycleScope.launch(Dispatchers.IO) {
+            println("Listing nodes...")
+            val j = JSONObject();
+            j.put("key1", "key1's value");
+            j.put("key2", "key2's value");
+            Tasks.await(Wearable.getNodeClient(self).connectedNodes).forEach() {
+                Wearable.getMessageClient(self).sendMessage(
+                    it.id,
+                    "/runningAppMessage",
+                    j.toString().toByteArray()
+                ).apply {
+                    addOnSuccessListener { println("Node Message sent") }
+                    addOnFailureListener { println("Node Message failed") }
+                }
+
+            }
+            println("Done listing nodes...")
+        }
     }
 
     var refreshData: MutableState<RefreshData?> = mutableStateOf(null)

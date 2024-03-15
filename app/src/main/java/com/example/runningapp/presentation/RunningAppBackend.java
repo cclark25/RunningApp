@@ -43,6 +43,7 @@ import android.location.LocationRequest;
 import android.os.Build;
 import android.os.CancellationSignal;
 import android.os.SystemClock;
+import android.os.VibrationEffect;
 import android.os.Vibrator;
 
 
@@ -320,19 +321,15 @@ public class RunningAppBackend implements SensorEventListener {
         boolean hasPermission = (context.checkSelfPermission("android.permission.ACCESS_COARSE_LOCATION") == PackageManager.PERMISSION_GRANTED);
 
         if (!(this.locManager != null && providerEnabled && hasPermission)){
-//            return "GPS connection determined inactive." ;
-//            System.out.println("GPS connection determined inactive." );
+            this.lastCheckActive = false;
             return false;
         }
 
         Location last = this.locManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
-//        System.out.println("GPS connected: " + connected );
-//        System.out.println("GPS last: " + (last != null) );
         if(last == null){
             this.lastCheckActive = false;
             return false;
-//            return "GPS no connection";
         }
         double elapsedTime = (SystemClock.elapsedRealtimeNanos() - (last.getElapsedRealtimeNanos())) / 1000000.00;
         boolean elapsedTimeRecent = elapsedTime < this.gpsRefreshMs * 10;
