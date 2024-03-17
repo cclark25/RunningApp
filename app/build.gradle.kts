@@ -43,6 +43,13 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    sourceSets {
+        getByName("main") {
+            java {
+                srcDirs("src/main/java", "src/main/kotlin+java/db", "src/main/java/2")
+            }
+        }
+    }
 }
 
 dependencies {
@@ -72,5 +79,12 @@ dependencies {
 
     // Add support for wearable specific inputs
     implementation("androidx.wear:wear-input:1.1.0")
+
+
+    val room_version = "2.6.1"
+
+    implementation("androidx.room:room-runtime:$room_version")
+    annotationProcessor("androidx.room:room-compiler:$room_version")
+
 
 }

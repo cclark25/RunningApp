@@ -5,7 +5,6 @@
  */
 
 package com.example.runningapp.presentation;
-
 import static android.content.Context.LOCALE_SERVICE;
 import static android.content.Context.LOCATION_SERVICE;
 import static android.content.Context.SENSOR_SERVICE;
@@ -33,6 +32,7 @@ import java.util.TimerTask;
 import java.util.Vector;
 import java.util.concurrent.Executor;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import android.hardware.SensorEventListener;
 import android.location.GnssStatus;
@@ -50,36 +50,83 @@ import android.os.Vibrator;
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 
+import com.example.runningapp.database.Activity;
+import com.example.runningapp.database.ActivityRecord;
+import com.example.runningapp.database.AppDatabase;
+
 import kotlin.UInt;
 
-class DataSample {
-    public Date timestamp = new Date();
-    public float heartRate = 0;
-
-    public Location location = null;
-}
+//class DataSample {
+//    public Date timestamp = new Date();
+//    public float heartRate = 0;
+//
+//    public Location location = null;
+//}
 
 class Segment {
-    public int lapNumber = 1;
-    public Date startTime = null;
-    public Date stopTime = null;
+//    public int lapNumber = 1;
+//    public Date startTime = null;
+//    public Date stopTime = null;
+
+    public com.example.runningapp.database.Segment dbData;
 
     public Segment previousSegment = null;
 
-    public Vector<DataSample> samples = new Vector<DataSample>();
+    public Vector<ActivityRecord> samples = new Vector<ActivityRecord>();
 
     private Duration finalizedTotalElapsedTime = null;
     private Duration finalizedLapElapsedTime = null;
+    private Context context;
+    private Activity activity;
+
+    private static Timer dbSaver = new Timer();
+    private static Vector<Segment> segmentsToSave = new Vector<Segment>();
+
+    private static boolean _staticInit = false;
+
+
+    public Segment(Context context, Activity act){
+        this.context = context;
+        this.activity = act;
+        com.example.runningapp.database.Segment s = new com.example.runningapp.database.Segment();
+        this.dbData = act.createSegment(AppDatabase.getInstance(context), s);
+        this.dbData.lapNumber = (long)(1);
+
+        Segment self = this;
+        Segment.segmentsToSave.add(this);
+
+        if(!Segment._staticInit){
+            Segment.dbSaver.schedule(new TimerTask() {
+                long skips = 0;
+                @Override
+                public void run() {
+                    try {
+
+                        for (Segment s : Segment.segmentsToSave) {
+                            s.activity.commit(AppDatabase.getInstance(context));
+                            s.dbData.commit(AppDatabase.getInstance(context));
+                        }
+                        skips = 0;
+                    }
+                    catch (java.util.ConcurrentModificationException e) {
+                        skips++;
+                        System.out.println(("Segment commit skipped " + skips) + " times");
+                    }
+                }
+            }, 10, 100);
+            Segment._staticInit = true;
+        }
+    }
 
     public Segment pressStartButton() {
-        if (this.startTime == null) {
-            this.startTime = new Date();
+        if (this.dbData.startTime == null) {
+            this.dbData.startTime = new Date();
             return this;
-        } else if (this.stopTime == null) {
-            this.stopTime = new Date();
-            Segment newSegment = new Segment();
+        } else if (this.dbData.stopTime == null) {
+            this.dbData.stopTime = new Date();
+            Segment newSegment = new Segment(this.context,this.activity);
             newSegment.previousSegment = this;
-            newSegment.lapNumber = this.lapNumber;
+            newSegment.dbData.lapNumber = this.dbData.lapNumber;
             return newSegment;
         } else {
             throw new Error("Start and Stop times are both already set!");
@@ -89,14 +136,14 @@ class Segment {
     public Segment pressLapButton() {
         Date lapPressMoment = new Date();
 
-        if (this.startTime == null) {
+        if (this.dbData.startTime == null) {
             return this;
-        } else if (this.stopTime == null) {
-            this.stopTime = lapPressMoment;
-            Segment newSegment = new Segment();
+        } else if (this.dbData.stopTime == null) {
+            this.dbData.stopTime = lapPressMoment;
+            Segment newSegment = new Segment(this.context, this.activity);
             newSegment.previousSegment = this;
-            newSegment.startTime = lapPressMoment;
-            newSegment.lapNumber = this.lapNumber + 1;
+            newSegment.dbData.startTime = lapPressMoment;
+            newSegment.dbData.lapNumber = this.dbData.lapNumber + 1;
             return newSegment;
         } else {
             throw new Error("Cannot lap an finalized segment!");
@@ -104,7 +151,7 @@ class Segment {
     }
 
     public boolean isRunning() {
-        return this.startTime != null && this.stopTime == null;
+        return this.dbData.startTime != null && this.dbData.stopTime == null;
     }
 
     public Duration getTotalDuration() {
@@ -120,7 +167,7 @@ class Segment {
             result = this.getSegmentTime().plus(this.previousSegment.getTotalDuration());
         }
 
-        if (this.startTime != null && this.stopTime != null) {
+        if (this.dbData.startTime != null && this.dbData.stopTime != null) {
             this.finalizedTotalElapsedTime = result;
         }
 
@@ -134,36 +181,41 @@ class Segment {
 
         Duration result = null;
 
-        if (this.previousSegment == null || (this.previousSegment.lapNumber != this.lapNumber)) {
+        if(this.previousSegment != null) {
+            System.out.println("Lap numbers: " + this.previousSegment.dbData.lapNumber
+                    + " => " + this.dbData.lapNumber);
+        }
+        if (this.previousSegment == null || !(this.previousSegment.dbData.lapNumber.equals(this.dbData.lapNumber))) {
             result = this.getSegmentTime();
         } else {
             result = this.getSegmentTime().plus(this.previousSegment.getLapDuration());
         }
 
-        if (this.startTime != null && this.stopTime != null) {
+        if (this.dbData.startTime != null && this.dbData.stopTime != null) {
             this.finalizedLapElapsedTime = result;
         }
 
         return result;
     }
 
-    public DataSample takeSample() {
+    public ActivityRecord takeSample() {
         if (!this.isRunning()) {
             return null;
         }
-        DataSample result = new DataSample();
+        ActivityRecord result = new ActivityRecord();
+        result.segmentID = this.dbData.id;
         this.samples.add(result);
         return result;
     }
 
     private Duration getSegmentTime() {
-        if (this.startTime == null) {
+        if (this.dbData.startTime == null) {
             return Duration.ZERO;
         }
-        if (this.stopTime == null) {
-            return Duration.ofMillis(new Date().getTime() - startTime.getTime());
+        if (this.dbData.stopTime == null) {
+            return Duration.ofMillis(new Date().getTime() - this.dbData.startTime.getTime());
         }
-        return Duration.ofMillis(this.stopTime.getTime() - startTime.getTime());
+        return Duration.ofMillis(this.dbData.stopTime.getTime() - this.dbData.startTime.getTime());
     }
 
 
@@ -175,6 +227,7 @@ interface Callback {
 
 public class RunningAppBackend implements SensorEventListener {
     private Timer processTask = new Timer();
+    private com.example.runningapp.database.Activity activity = new com.example.runningapp.database.Activity();
 
 
     private SensorManager mSensorManager;
@@ -186,23 +239,58 @@ public class RunningAppBackend implements SensorEventListener {
     float lastHeartRate = 0;
     Location lastLocation = null;
 
-    public Segment currentSegment = new Segment();
+    public Segment currentSegment;
 
     public Callback onRefresh = ()->{};
 
     public RunningAppBackend(Context context) {
         RunningAppBackend self = this;
         this.context = context;
+        this.activity.createdAt = new Date();
+
+//        (new Timer()).schedule(new TimerTask() {
+//            @Override
+//            public void run() {
+//                System.out.println("Activity ID before insert: " + self.activity.id);
+////                AppDatabase.getInstance(context).getActivityDao()
+////                        .insert(self.activity);
+//                self.activity.commit(AppDatabase.getInstance(context));
+//
+//                System.out.println("Activity ID after insert: " + self.activity.id);
+//
+//                List<Activity> dbActivities = AppDatabase.getInstance(context).getActivityDao()
+//                        .getAll();
+//
+//                System.out.println("Activities in the database: "
+//                        + String.join(", ",  (dbActivities.stream().map(
+//                            (Activity a) -> Long.toString(a.id)
+//                        )).collect(Collectors.toList()))
+//
+//                );
+//
+//            }
+//        }, 10);
 
 
         this.processTask.schedule(new TimerTask() {
             public void run() {
-//                System.out.println("RunningAppBackend Timer ticked");
-                DataSample s = self.currentSegment.takeSample();
+                if(self.currentSegment == null){
+                    return;
+                }
 
-                if (s != null) {
-                    s.heartRate = self.lastHeartRate;
-                    s.location = self.lastLocation;
+                ActivityRecord s = self.currentSegment.takeSample();
+
+                if (s != null && self.lastLocation != null) {
+                    s.timestamp = new Date();
+                    s.heartRate = new Double(self.lastHeartRate);
+                    s.latitude = self.lastLocation.getLatitude();
+                    s.longitude = self.lastLocation.getLongitude();
+                    s.altitude = self.lastLocation.getAltitude();
+                    System.out.println("GPS added to sample.");
+                }
+                else {
+                    System.out.println("s: " + s);
+                    System.out.println("self.lastLocation: " + self.lastLocation);
                 }
                 self.onRefresh.run();
             }
@@ -227,6 +315,12 @@ public class RunningAppBackend implements SensorEventListener {
             );
 
         }
+        else {
+            System.out.println("GPS 1:" + (self.locManager != null));
+            System.out.println("GPS 2:" + self.locManager.isProviderEnabled(LocationManager.GPS_PROVIDER));
+            System.out.println("GPS 3:" + (context.checkSelfPermission("android.permission.ACCESS_COARSE_LOCATION")
+                    == PackageManager.PERMISSION_GRANTED));
+        }
 
         this.startMeasure();
     }
@@ -239,11 +333,15 @@ public class RunningAppBackend implements SensorEventListener {
         return this.currentSegment.getLapDuration();
     }
 
-    public int getCurrentLapNumber(){
-        return this.currentSegment.lapNumber;
+    public long getCurrentLapNumber(){
+        return this.currentSegment.dbData.lapNumber != null
+                ? this.currentSegment.dbData.lapNumber : 0;
     }
 
     public boolean startButton(){
+        if(this.currentSegment == null){
+            this.currentSegment = new Segment(context, this.activity);
+        }
         this.currentSegment = this.currentSegment.pressStartButton();
         return this.currentSegment.isRunning();
 //        if(this.currentSegment.isRunning()){
@@ -255,9 +353,11 @@ public class RunningAppBackend implements SensorEventListener {
     }
 
     public boolean lapButton(){
-        int l = this.currentSegment.lapNumber;
+        Long l = this.currentSegment.dbData.lapNumber;
         this.currentSegment = this.currentSegment.pressLapButton();
-        boolean result = l != this.currentSegment.lapNumber;
+        boolean result = !(
+                l != null ? l : Long.valueOf(0)
+            ).equals(this.currentSegment.dbData.lapNumber);
 
         if(result){
             Vibrator vibrator = (Vibrator) this.context.getSystemService(VIBRATOR_SERVICE);
@@ -306,10 +406,10 @@ public class RunningAppBackend implements SensorEventListener {
         Segment curseg = this.currentSegment;
         double totalDistance = 0;
         while(curseg != null){
-            if(lapDistance && curseg.lapNumber != this.currentSegment.lapNumber){
+            if(lapDistance && curseg.dbData.lapNumber != this.currentSegment.dbData.lapNumber){
                 break;
             }
-            totalDistance += GPSDataSummarizer.summarizeDistance((Vector<DataSample>) curseg.samples.clone());
+            totalDistance += GPSDataSummarizer.summarizeDistance((Vector<ActivityRecord>) curseg.samples.clone());
             curseg = curseg.previousSegment;
         }
         return totalDistance;

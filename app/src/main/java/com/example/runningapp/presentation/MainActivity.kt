@@ -56,7 +56,7 @@ import kotlin.time.toKotlinDuration
 
 class RefreshData(be: RunningAppBackend) {
     val duration: Duration = be.totalDuration.toKotlinDuration();
-    val lapNum: Int = be.currentLapNumber;
+    val lapNum: Long = be.currentLapNumber;
     val lapDuration: Duration = be.lapDuration.toKotlinDuration();
     val heartRate: Float = be.heartRate;
     // TODO: this distance calculation is entering an infinite loop on laps and start/stops I think
@@ -162,7 +162,7 @@ open class MainActivity : AppCompatActivity(),
     }
 
     @Composable
-    fun LapNumber(lapNum: Int){
+    fun LapNumber(lapNum: Long){
         Text("Lap $lapNum")
     }
 
@@ -275,7 +275,7 @@ open class MainActivity : AppCompatActivity(),
         this.backend = RunningAppBackend(this)
 
 
-//        this.backend?.startButton();
+        this.backend?.startButton();
         this.backend?.onRefresh = Callback {
 
 //            println("MainActivity callback called")
