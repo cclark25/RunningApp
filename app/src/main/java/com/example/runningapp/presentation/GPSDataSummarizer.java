@@ -1,12 +1,8 @@
 package com.example.runningapp.presentation;
 
-import com.example.runningapp.database.ActivityRecord;
+import com.example.runningapp.shared.ActivityRecord;
 
-import java.util.List;
-import java.util.Objects;
 import java.util.Vector;
-import java.util.stream.Stream;
-
 
 
 public class GPSDataSummarizer {

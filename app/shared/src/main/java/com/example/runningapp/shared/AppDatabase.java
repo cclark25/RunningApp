@@ -1,4 +1,4 @@
-package com.example.runningapp.database;
+package com.example.runningapp.shared;
 
 import android.content.Context;
 
@@ -14,10 +14,7 @@ import androidx.room.TypeConverters;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 import androidx.sqlite.db.SupportSQLiteOpenHelper;
 
-import com.example.runningapp.database.ActivityDao;
-
 import java.util.Date;
-import java.util.Objects;
 
 class Converters {
     @TypeConverter

@@ -1,17 +1,18 @@
 plugins {
-    alias(libs.plugins.androidApplication)
+//    alias(libs.plugins.androidApplication)
+    id("com.android.library")
 }
 
 android {
-    namespace = "com.example.runningapp"
+    namespace = "com.example.runningapp.shared"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.runningapp"
+//        applicationId = "com.example.runningapp.shared"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+//        versionCode = 1
+//        versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -29,8 +30,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    buildFeatures {
-        viewBinding = true
+    sourceSets {
+        getByName("main") {
+            java {
+                srcDirs("src/main/java", "src/main/java/2")
+            }
+        }
     }
 }
 
@@ -38,20 +43,13 @@ dependencies {
 
     implementation(libs.appcompat)
     implementation(libs.material)
-    implementation(libs.constraintlayout)
-    implementation(libs.navigation.fragment)
-    implementation(libs.navigation.ui)
-    implementation(libs.play.services.wearable)
-    implementation(project(":app:shared"))
-//    implementation("com.google.android.gms:play-services-wearable:xx.x.x")
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 
 
     val room_version = "2.6.1"
+
     implementation("androidx.room:room-runtime:$room_version")
     annotationProcessor("androidx.room:room-compiler:$room_version")
-
-    project(":app:shared")
 }

@@ -67,6 +67,7 @@ dependencies {
 //    implementation( libs.lifecycle.extensions)
     implementation( libs.lifecycle.runtime.ktx)
     implementation(libs.appcompat)
+    implementation(project(":app:shared"))
 
 
     androidTestImplementation(platform(libs.compose.bom))
@@ -82,9 +83,8 @@ dependencies {
 
 
     val room_version = "2.6.1"
-
     implementation("androidx.room:room-runtime:$room_version")
     annotationProcessor("androidx.room:room-compiler:$room_version")
 
-
+    project(":app:shared")
 }

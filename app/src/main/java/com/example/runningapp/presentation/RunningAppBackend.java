@@ -5,56 +5,33 @@
  */
 
 package com.example.runningapp.presentation;
-import static android.content.Context.LOCALE_SERVICE;
 import static android.content.Context.LOCATION_SERVICE;
 import static android.content.Context.SENSOR_SERVICE;
 import static android.content.Context.VIBRATOR_SERVICE;
 
 
-import static androidx.core.content.ContextCompat.getSystemService;
-
-import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorManager;
 
-import android.hardware.Sensor;
-import android.hardware.SensorManager;
-
-import java.text.DecimalFormat;
 import java.time.Duration;
 import java.util.Date;
-import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.Vector;
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import android.hardware.SensorEventListener;
-import android.location.GnssStatus;
 import android.location.Location;
-import android.location.LocationListener;
 import android.location.LocationManager;
-import android.location.LocationRequest;
-import android.os.Build;
-import android.os.CancellationSignal;
 import android.os.SystemClock;
-import android.os.VibrationEffect;
 import android.os.Vibrator;
 
 
-import androidx.annotation.NonNull;
-import androidx.core.app.ActivityCompat;
-
-import com.example.runningapp.database.Activity;
-import com.example.runningapp.database.ActivityRecord;
-import com.example.runningapp.database.AppDatabase;
-
-import kotlin.UInt;
+import com.example.runningapp.shared.Activity;
+import com.example.runningapp.shared.ActivityRecord;
+import com.example.runningapp.shared.AppDatabase;
 
 //class DataSample {
 //    public Date timestamp = new Date();
@@ -68,7 +45,7 @@ class Segment {
 //    public Date startTime = null;
 //    public Date stopTime = null;
 
-    public com.example.runningapp.database.Segment dbData;
+    public com.example.runningapp.shared.Segment dbData;
 
     public Segment previousSegment = null;
 
@@ -88,7 +65,7 @@ class Segment {
     public Segment(Context context, Activity act){
         this.context = context;
         this.activity = act;
-        com.example.runningapp.database.Segment s = new com.example.runningapp.database.Segment();
+        com.example.runningapp.shared.Segment s = new com.example.runningapp.shared.Segment();
         this.dbData = act.createSegment(AppDatabase.getInstance(context), s);
         this.dbData.lapNumber = (long)(1);
 
@@ -227,7 +204,7 @@ interface Callback {
 
 public class RunningAppBackend implements SensorEventListener {
     private Timer processTask = new Timer();
-    private com.example.runningapp.database.Activity activity = new com.example.runningapp.database.Activity();
+    private com.example.runningapp.shared.Activity activity = new com.example.runningapp.shared.Activity();
 
 
     private SensorManager mSensorManager;

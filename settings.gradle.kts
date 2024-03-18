@@ -22,3 +22,4 @@ dependencyResolutionManagement {
 rootProject.name = "Running App"
 include(":app")
 include(":app:myapplication")
+include(":app:shared")
