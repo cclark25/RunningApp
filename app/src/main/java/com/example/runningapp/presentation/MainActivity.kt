@@ -59,6 +59,7 @@ class RefreshData(be: RunningAppBackend) {
     val lapNum: Long = be.currentLapNumber;
     val lapDuration: Duration = be.lapDuration.toKotlinDuration();
     val heartRate: Float = be.heartRate;
+    val stepCount: Float = be.currentStepCount ?: 0.0f;
     // TODO: this distance calculation is entering an infinite loop on laps and start/stops I think
     val distanceMeters: Double = be.getDistance(false);
     val lapMeters: Double = be.getDistance(true);
@@ -237,7 +238,9 @@ open class MainActivity : AppCompatActivity(),
                             Distance(distanceMeters = self.refreshData?.value?.lapMeters ?: 0.0)
 
                             HeartRate(self.refreshData?.value?.heartRate ?: 0.0.toFloat())
-//                            GPSConnected(self.refreshData?.value?.gpsState ?: false)
+
+                            Text("Steps: ${(self.refreshData?.value?.stepCount ?: 0.0.toFloat())}")
+
                         }
                     }
                     val gpsIndicator =

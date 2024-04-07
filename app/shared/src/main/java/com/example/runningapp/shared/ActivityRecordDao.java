@@ -21,9 +21,12 @@ public interface ActivityRecordDao {
     public void update(ActivityRecord... acts);
 
     @Query("SELECT * FROM ActivityRecord WHERE ActivityRecord.id IN (:ids)")
-    public List<Activity> get(int... ids);
+    public List<ActivityRecord> get(long... ids);
 
 
     @Query("SELECT * FROM ActivityRecord WHERE ActivityRecord.segmentID in (:segIds)")
-    public List<Activity> getForActivity(int... segIds);
+    public List<ActivityRecord> getForSegment(long... segIds);
+
+    @Query("SELECT * FROM ActivityRecord")
+    public List<ActivityRecord> getAll();
 }

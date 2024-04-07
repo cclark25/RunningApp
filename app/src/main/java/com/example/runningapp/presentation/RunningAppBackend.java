@@ -32,6 +32,7 @@ import android.os.Vibrator;
 import com.example.runningapp.shared.Activity;
 import com.example.runningapp.shared.ActivityRecord;
 import com.example.runningapp.shared.AppDatabase;
+import com.example.runningapp.shared.GPSDataSummarizer;
 
 //class DataSample {
 //    public Date timestamp = new Date();
@@ -70,6 +71,7 @@ class Segment {
         this.dbData.lapNumber = (long)(1);
 
         Segment self = this;
+        System.out.println("Committing Adding to save queue");
         Segment.segmentsToSave.add(this);
 
         if(!Segment._staticInit){
@@ -80,8 +82,15 @@ class Segment {
                     try {
 
                         for (Segment s : Segment.segmentsToSave) {
+                            System.out.println("Committing activity");
                             s.activity.commit(AppDatabase.getInstance(context));
+                            System.out.println("Committing segment");
                             s.dbData.commit(AppDatabase.getInstance(context));
+                            for(ActivityRecord r : s.samples){
+                                s.dbData.createRecord(AppDatabase.getInstance(context), r);
+                                System.out.println("Committing sample");
+                                r.commit(AppDatabase.getInstance(context));
+                            }
                         }
                         skips = 0;
                     }
@@ -209,11 +218,13 @@ public class RunningAppBackend implements SensorEventListener {
 
     private SensorManager mSensorManager;
     private Sensor mHeartSensor;
+    private Sensor stepCounterManager;
     private LocationManager locManager;
     private Context context;
     private long gpsRefreshMs = 100;
 
     float lastHeartRate = 0;
+    Float lastStepCount = null;
     Location lastLocation = null;
 
     public Segment currentSegment;
@@ -276,6 +287,7 @@ public class RunningAppBackend implements SensorEventListener {
         mSensorManager = (SensorManager) context.getSystemService(SENSOR_SERVICE);
         mHeartSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE);
         locManager = (LocationManager) context.getSystemService(LOCATION_SERVICE);
+        stepCounterManager = mSensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER);
 
         if(
                 self.locManager != null
@@ -349,7 +361,13 @@ public class RunningAppBackend implements SensorEventListener {
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        this.lastHeartRate = event.values[0];
+        if(this.mHeartSensor.getId() == event.sensor.getId()){
+            this.lastHeartRate = event.values[0];
+        }
+        else if(this.stepCounterManager.getId() == event.sensor.getId()){
+            this.lastStepCount = event.values[0];
+        }
+
 
 //        System.out.println("Heart Rate: " + this.lastHeartRate );
     }
@@ -360,11 +378,16 @@ public class RunningAppBackend implements SensorEventListener {
     }
 
     private boolean heartRateMeasuring = false;
+    private boolean stepsMeasuring = false;
 
     private void startMeasure() {
         if(!this.heartRateMeasuring){
             this.heartRateMeasuring = mSensorManager.registerListener(this, mHeartSensor, SensorManager.SENSOR_DELAY_FASTEST);
         }
+        if(!this.stepsMeasuring){
+            this.stepsMeasuring = mSensorManager.registerListener(this, stepCounterManager, SensorManager.SENSOR_DELAY_FASTEST);
+        }
+
 
 //        System.out.println("Sensor registered: " + (this.heartRateMeasuring ? "yes" : "no"));
     }
@@ -377,6 +400,9 @@ public class RunningAppBackend implements SensorEventListener {
 
     public float getHeartRate(){
         return this.lastHeartRate;
+    }
+    public Float getCurrentStepCount(){
+        return this.lastStepCount;
     }
 
     public double getDistance(boolean lapDistance){

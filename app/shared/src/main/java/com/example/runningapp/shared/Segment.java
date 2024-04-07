@@ -1,6 +1,5 @@
 package com.example.runningapp.shared;
 
-import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
 import androidx.room.Ignore;
@@ -8,6 +7,7 @@ import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
 import java.util.Date;
+import java.util.List;
 
 
 @Entity(foreignKeys = {
@@ -36,5 +36,16 @@ public class Segment {
         else {
             db.getSegmentDao().update(this);
         }
+    }
+
+    public List<ActivityRecord> getRecords(AppDatabase db){
+        return db.getActivityRecordDao().getForSegment(this.id);
+    }
+
+    public ActivityRecord createRecord(AppDatabase db, ActivityRecord r){
+        if(r.segmentID == null){
+            r.segmentID = this.id;
+        }
+        return r;
     }
 }

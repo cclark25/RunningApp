@@ -1,5 +1,6 @@
 package com.example.runningapp;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -18,6 +19,9 @@ import com.example.runningapp.databinding.ActivityAndroidCompanionBinding;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TableLayout;
+
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class AndroidCompanion extends AppCompatActivity {
 
@@ -51,6 +55,13 @@ public class AndroidCompanion extends AppCompatActivity {
         TableLayout o = (TableLayout) findViewById(R.id.tableData);
 
         this.tableManager = new ActivityTableManager(this, o);
+        AndroidCompanion self = this;
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println(self.tableManager.count);
+            }
+        }, 0, 1000);
     }
 
     @Override
@@ -80,5 +91,21 @@ public class AndroidCompanion extends AppCompatActivity {
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_android_companion);
         return NavigationUI.navigateUp(navController, appBarConfiguration)
                 || super.onSupportNavigateUp();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == 123) {
+            if(resultCode == android.app.Activity.RESULT_OK){
+                System.out.println("Intent Succeeded: " + data.toUri(0));
+                String result=data.getStringExtra("result");
+            }
+            if (resultCode == android.app.Activity.RESULT_CANCELED) {
+                System.out.println("Intent failed");
+                // Write your code if there's no result
+            }
+        }
     }
 }
